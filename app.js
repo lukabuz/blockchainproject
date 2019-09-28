@@ -19,16 +19,17 @@ class Wallet {
     var privateKey = this.getPrivateKey();
     if (privateKey) {
       //private key was found, there is already a wallet initialized
+      //authentication
       var password = "";
       var decryptedPrivateKey = false;
       password = this.getPassword(false);
       decryptedPrivateKey = this.decryptPrivateKey(privateKey, password);
       while (!decryptedPrivateKey) {
+        //repeat password prompt until the right password is given
         password = this.getPassword(true);
         decryptedPrivateKey = this.decryptPrivateKey(privateKey, password);
       }
-      this.wallet = new SimpleWallet(decryptedPrivateKey);
-      console.log(this.wallet.mnemonic);
+      this.wallet = new SimpleWallet(decryptedPrivateKey); //create the simplewallet object from the decrypted private key
       return true;
     } else {
       //there is no private key initialized
@@ -93,7 +94,89 @@ class Wallet {
   generatePrivateKey() {
     return faker.random.words(12);
   }
+  // get balance of wallet
+  getBalance() {
+    return this.wallet.getBalance();
+  }
+  // get address of wallet
+  getAddress() {
+    return this.wallet.legacyAddress;
+  }
+  //send bitcoin to address
+  async sendBitcoin(address, amount) {
+    try {
+      const tx = await this.wallet.send([
+        {
+          address: "bitcoincash:" + address,
+          amountSat: amount / 0.00000001
+        }
+      ]);
+      return true;
+    } catch (e) {
+      console.log(e);
+      if (e == "Error: Insufficient balance") {
+        alert(
+          "transaction failed due to insufficient balance, please try again"
+        );
+      } else {
+        alert("transaction failed, please try again");
+      }
+
+      return false;
+    }
+  }
+}
+
+class Page {
+  constructor(wallet, eventListeners) {
+    this.wallet = wallet;
+    for (var i = 0; i < eventListeners.length; i++) {
+      this.initializeEventListener(
+        eventListeners[i].elementId,
+        eventListeners[i].event,
+        eventListeners[i].functionToRun
+      );
+    }
+    return;
+  }
+  initializeEventListener(elementId, event, functionToRun) {
+    document
+      .getElementById(elementId)
+      .addEventListener(event, () => functionToRun(this.wallet));
+  }
+  async updateWalletInfo() {
+    var balance = await this.wallet.getBalance();
+    var balanceTag = document.getElementById("balance");
+    balanceTag.innerHTML =
+      "<strong>Bitcoin Wallet: </strong><a href='https://www.blockchain.com/btc/address/" +
+      this.wallet.getAddress() +
+      "' style='color: hsl(217, 71%, 53%)'>" +
+      this.wallet.getAddress() +
+      "</a><br />Balance: " +
+      balance +
+      "BTC";
+    return;
+  }
 }
 
 // localStorage.clear();
 var coinwallet = new Wallet();
+eventListeners = [
+  {
+    elementId: "transferButton",
+    event: "click",
+    functionToRun: async wallet => {
+      const recipientAddress = document.getElementById("recipientAddress");
+      const amountToSend = document.getElementById("amountToSend").value;
+      if (isNaN(amountToSend)) {
+        alert("Please enter a number in the amount to send field");
+        return;
+      }
+      wallet.sendBitcoin(recipientAddress, amountToSend);
+      return;
+    }
+  }
+];
+var page = new Page(coinwallet, eventListeners);
+
+page.updateWalletInfo();
