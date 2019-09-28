@@ -89,46 +89,80 @@
               </div>
             </article>
           </div>
+          <div id="newsContainer" class="box">
+            <strong>News</strong>
+            <br />
+            <h1>Loading...</h1>
+          </div>
         </div>
         <div class="column">
-          <span>Send Bitcoin</span>
-          <hr />
-          <div class="field">
-            <label class="label">Recipient's Bitcoin address</label>
-            <div class="control">
-              <input
-                id="recipientAddress"
-                class="input"
-                type="text"
-                placeholder="Text input"
-              />
+          <div class="box">
+            <strong>Send Bitcoin</strong>
+            <hr />
+            <div class="field">
+              <label class="label">Recipient's Bitcoin address</label>
+              <div class="control">
+                <input
+                  id="recipientAddress"
+                  class="input"
+                  type="text"
+                  placeholder="Bitcoin Address"
+                />
+              </div>
+            </div>
+            <label class="label">Amount of Bitcoin to send</label>
+            <div class="field has-addons has-addons-left">
+              <p class="control">
+                <span class="select">
+                  <select>
+                    <option>BTC</option>
+                  </select>
+                </span>
+              </p>
+              <p class="control">
+                <input
+                  class="input"
+                  type="text"
+                  placeholder="Amount of bitcoin"
+                  id="amountToSend"
+                />
+              </p>
+              <p class="control">
+                <a class="button is-primary" id="transferButton">
+                  Transfer
+                </a>
+              </p>
             </div>
           </div>
-          <label class="label">Amount of Bitcoin to send</label>
-          <div class="field has-addons has-addons-left">
-            <p class="control">
-              <span class="select">
-                <select>
-                  <option>BTC</option>
-                </select>
-              </span>
-            </p>
-            <p class="control">
-              <input
-                class="input"
-                type="text"
-                placeholder="Amount of bitcoin"
-                id="amountToSend"
-              />
-            </p>
-            <p class="control">
-              <a class="button is-primary" id="transferButton">
-                Transfer
-              </a>
-            </p>
+        </div>
+        <div class="column">
+          <div class="box">
+            <article class="media">
+              <div class="media-left">
+                <figure class="image is-128x128">
+                  <img id="qrCode" />
+                </figure>
+              </div>
+              <div class="media-content">
+                <div class="content">
+                  <p>
+                    <strong>Recieve Bitcoin</strong>
+                  </p>
+                  <div class="field has-addons">
+                    <div class="control">
+                      <input class="input" type="text" id="addressField" />
+                    </div>
+                    <div class="control">
+                      <a class="button is-info" id="copyAddressButton">
+                        Copy
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
           </div>
         </div>
-        <div class="column">3</div>
       </div>
     </section>
     <script src="app.js"></script>

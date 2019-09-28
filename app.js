@@ -1,3 +1,7 @@
+// API key for newsapi.org
+const newsApiKey = "e8701977d65f4fab955bf62044389166";
+const newsApiUrl = "https://newsapi.org/v2/everything";
+
 //defining the function to create hashes of strings. used for password storage
 String.prototype.hashCode = function() {
   var hash = 0,
@@ -38,6 +42,7 @@ class Wallet {
       var privateKey = this.generatePrivateKey();
       this.savePrivateKey(this.encryptPrivateKey(privateKey, password));
       this.wallet = new SimpleWallet(privateKey);
+      alert("Please save your private key in a safe place: " + privateKey);
       return true;
     }
   }
@@ -107,7 +112,7 @@ class Wallet {
     try {
       const tx = await this.wallet.send([
         {
-          address: "bitcoincash:" + address,
+          address: "bitcoin:" + address,
           amountSat: amount / 0.00000001
         }
       ]);
@@ -145,6 +150,7 @@ class Page {
       .addEventListener(event, () => functionToRun(this.wallet));
   }
   async updateWalletInfo() {
+    //update wallet balance
     var balance = await this.wallet.getBalance();
     var balanceTag = document.getElementById("balance");
     balanceTag.innerHTML =
@@ -155,13 +161,75 @@ class Page {
       "</a><br />Balance: " +
       balance +
       "BTC";
+    //update QR code
+    var qrCode = document.getElementById("qrCode");
+    qrCode.src =
+      "https://api.qrserver.com/v1/create-qr-code/?size=128x128&data=" +
+      this.wallet.getAddress();
+    var addressField = document.getElementById("addressField");
+    addressField.value = this.wallet.getAddress();
     return;
+  }
+  //get last 2 weeks news related to bitcoin
+  async updateNews() {
+    //fetch json
+    const link =
+      newsApiUrl +
+      "?q=bitcoin&from=" +
+      new Date(Date.now() - 12096e5).toISOString() +
+      "&sortBy=publishedAt&apiKey=" +
+      newsApiKey;
+    let response = await fetch(link);
+    var articles = await response.json();
+    articles = articles.articles;
+
+    //set up html and add it to DOM
+    var newsContainer = document.getElementById("newsContainer");
+    newsContainer.innerHTML = "<strong>News</strong><br />";
+    for (var i = 0; i < articles.length; i++) {
+      newsContainer.innerHTML += this.articleMaker(
+        articles[i].title,
+        articles[i].urlToImage,
+        articles[i].author,
+        articles[i].publishedAt,
+        articles[i].description,
+        articles[i].url
+      );
+      if (i == 4) {
+        break;
+      }
+    }
+  }
+  //formats innerHTML for news articles
+  articleMaker(title, imageLink, author, date, text, url) {
+    return (
+      '<div class="box"><article class="media"><div class="media-left"><a href="' +
+      url +
+      '"><figure class="image is-64x64"><img src="' +
+      imageLink +
+      '" alt="Image"/></figure></a></div><div class="media-content"><div class="content"><p><a href="' +
+      url +
+      '"><strong>' +
+      title +
+      "</strong></a> <small>" +
+      author +
+      "</small> <small>" +
+      date +
+      "</small><br />" +
+      text +
+      "</p></div></div></article></div>"
+    );
   }
 }
 
 // localStorage.clear();
 var coinwallet = new Wallet();
+//event listeners must be defined here, they will be passed into the page object
+// elementId: id of the element to listen to
+// event: event to listen for
+// functionToRun: function to run, the page object passes in the wallet object to this function
 eventListeners = [
+  //event listener for transaction sending handling
   {
     elementId: "transferButton",
     event: "click",
@@ -175,8 +243,20 @@ eventListeners = [
       wallet.sendBitcoin(recipientAddress, amountToSend);
       return;
     }
+  },
+  //event listener for copying the address of the wallet
+  {
+    elementId: "copyAddressButton",
+    event: "click",
+    functionToRun: async wallet => {
+      const addressField = document.getElementById("addressField");
+      addressField.select();
+      addressField.setSelectionRange(0, 99999);
+      document.execCommand("copy");
+    }
   }
 ];
 var page = new Page(coinwallet, eventListeners);
 
 page.updateWalletInfo();
+page.updateNews();
