@@ -6,10 +6,11 @@ const newsApiUrl = "https://newsapi.org/v2/everything";
 const transactionApiUrl = "https://bch-chain.api.btc.com/v3/tx";
 
 //api for getting coin prices
-const coinLayerApiKey = "d85c506d09c7ee25c0f5f0f2f21a03d4";
-const coinLayerApiUrl =
-  "http://api.coinlayer.com/api/live?symbols=BCH,ETH,BTC,LTC,XRP,XLM,XMR&access_key=" +
-  coinLayerApiKey;
+const cryptocompareApiKey =
+  "9bf51ea17a0f6380e4d057bbd14d9a401984f96e55da248a7ddb2bfd60e81108";
+const cryptocompareApiUrl =
+  "https://min-api.cryptocompare.com/data/price?fsym=USD&tsyms=BCH,ETH,BTC,LTC,XRP,XLM,XMR&api_key=" +
+  cryptocompareApiKey;
 
 //api for getting coin symbol images
 const symbolImageUrl = "https://s2.coinmarketcap.com/static/img/coins/64x64";
@@ -265,7 +266,6 @@ class Page {
     let response = await fetch(link);
     var articles = await response.json();
     articles = articles.articles;
-    console.log(articles);
 
     //set up html and add it to DOM
     var newsContainer = document.getElementById("newsContainer");
@@ -308,9 +308,8 @@ class Page {
   //update the coin prices view
   async updateCoinPrices() {
     //get response from api
-    let response = await fetch(coinLayerApiUrl);
+    let response = await fetch(cryptocompareApiUrl);
     let prices = await response.json();
-    prices = prices.rates;
     //add everything to container
     let priceContainer = document.getElementById("pricesContainer");
     const keys = Object.keys(prices);
@@ -321,7 +320,6 @@ class Page {
         key
       );
     }
-    console.log(prices);
   }
   //formats innerHTML for coin prices
   priceViewMaker(iconId, price, sign) {
@@ -405,6 +403,7 @@ eventListeners = [
   }
 ];
 
+//this function registers a given function to be run as soon as the DOM content is loaded.
 function docReady(fn) {
   if (
     document.readyState === "complete" ||
@@ -415,5 +414,3 @@ function docReady(fn) {
     document.addEventListener("DOMContentLoaded", fn);
   }
 }
-
-// localStorage.clear();
