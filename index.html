@@ -19,7 +19,7 @@
   <body>
     <nav class="navbar" role="navigation" aria-label="main navigation">
       <div class="navbar-brand">
-        <a class="navbar-item" href="#">
+        <a class="navbar-item" href="index.html">
           CoinWallet
         </a>
 
@@ -38,11 +38,11 @@
 
       <div id="navbarBasicExample" class="navbar-menu">
         <div class="navbar-start">
-          <a class="navbar-item">
+          <a class="navbar-item" href="index.html">
             My Wallet
           </a>
 
-          <a class="navbar-item">
+          <a class="navbar-item" href="transactions.html">
             Transactions
           </a>
 
@@ -52,15 +52,7 @@
             </a>
 
             <div class="navbar-dropdown">
-              <a class="navbar-item">
-                Coin Prices
-              </a>
-              <a class="navbar-item">
-                Block Explorer
-              </a>
-              <a class="navbar-item"> </a>
-              <hr class="navbar-divider" />
-              <a class="navbar-item">
+              <a class="navbar-item" id="deleteWallet">
                 Delete wallet
               </a>
             </div>
@@ -82,7 +74,7 @@
               <div class="media-content">
                 <div class="content">
                   <p id="balance">
-                    <strong>Bitcoin Wallet</strong>
+                    <strong>Bitcoin Cash Wallet</strong>
                     <br />
                     Balance:
                   </p>
@@ -98,25 +90,25 @@
         </div>
         <div class="column">
           <div class="box">
-            <strong>Send Bitcoin</strong>
+            <strong>Send Bitcoin Cash</strong>
             <hr />
             <div class="field">
-              <label class="label">Recipient's Bitcoin address</label>
+              <label class="label">Recipient's Bitcoin Cash address</label>
               <div class="control">
                 <input
                   id="recipientAddress"
                   class="input"
                   type="text"
-                  placeholder="Bitcoin Address"
+                  placeholder="Bitcoin Cash Address"
                 />
               </div>
             </div>
-            <label class="label">Amount of Bitcoin to send</label>
+            <label class="label">Amount of Bitcoin Cash to send</label>
             <div class="field has-addons has-addons-left">
               <p class="control">
                 <span class="select">
                   <select>
-                    <option>BTC</option>
+                    <option>BCH</option>
                   </select>
                 </span>
               </p>
@@ -124,7 +116,7 @@
                 <input
                   class="input"
                   type="text"
-                  placeholder="Amount of bitcoin"
+                  placeholder="Amount of bitcoin cash"
                   id="amountToSend"
                 />
               </p>
@@ -147,7 +139,7 @@
               <div class="media-content">
                 <div class="content">
                   <p>
-                    <strong>Recieve Bitcoin</strong>
+                    <strong>Recieve Bitcoin Cash</strong>
                   </p>
                   <div class="field has-addons">
                     <div class="control">
@@ -163,9 +155,28 @@
               </div>
             </article>
           </div>
+          <div id="pricesContainer" class="box">
+            <strong>Prices</strong>
+            <br />
+          </div>
         </div>
       </div>
     </section>
     <script src="app.js"></script>
+    <script>
+      docReady(function() {
+        var notificationHandler = new NotificationHandler(
+          "notificationContainer"
+        );
+        var coinWallet = new Wallet(notificationHandler);
+        var mainPage = new Page(
+          coinWallet,
+          eventListeners,
+          notificationHandler
+        );
+
+        console.log(coinWallet.getTransactions());
+      });
+    </script>
   </body>
 </html>

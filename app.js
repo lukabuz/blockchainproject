@@ -2,6 +2,28 @@
 const newsApiKey = "e8701977d65f4fab955bf62044389166";
 const newsApiUrl = "https://newsapi.org/v2/everything";
 
+//api for viewing transaction info
+const transactionApiUrl = "https://bch-chain.api.btc.com/v3/tx";
+
+//api for getting coin prices
+const coinLayerApiKey = "d85c506d09c7ee25c0f5f0f2f21a03d4";
+const coinLayerApiUrl =
+  "http://api.coinlayer.com/api/live?symbols=BCH,ETH,BTC,LTC,XRP,XLM,XMR&access_key=" +
+  coinLayerApiKey;
+
+//api for getting coin symbol images
+const symbolImageUrl = "https://s2.coinmarketcap.com/static/img/coins/64x64";
+//object that stores corresponding ids to cryptos for the imaging api
+const symbols = {
+  BCH: 1831,
+  ETH: 1027,
+  BTC: 1,
+  LTC: 2,
+  XRP: 52,
+  XLM: 512,
+  XMR: 328
+};
+
 //defining the function to create hashes of strings. used for password storage
 String.prototype.hashCode = function() {
   var hash = 0,
@@ -139,11 +161,50 @@ class Wallet {
       return false;
     }
   }
+  //get the info of a wallet from simplewallet api
   async getWalletInfo() {
-    const myWalletInfo = await this.wallet.getWalletInfo(
-      "bitcoincash:qp2rmj8heytjrksxm2xrjs0hncnvl08xwgkweawu9h"
-    );
-    console.log(myWalletInfo);
+    return new Promise(async resolve => {
+      const myWalletInfo = await this.wallet.getWalletInfo();
+      resolve(myWalletInfo);
+    });
+  }
+  //get a list of transactions(very slow). can interact with progressbar if needed
+  async getTransactions(progressBar) {
+    //get transaction list
+    let wallet = await this.getWalletInfo();
+    console.log(wallet.transactions);
+    let transactions = [];
+    if (progressBar) {
+      progressBar.max = wallet.transactions.length;
+      progressBar.value = 0;
+    }
+    //loop through list and get info about each transaction from api, very inefficient
+    for (var i = 0; i < wallet.transactions.length; i++) {
+      if (progressBar) {
+        progressBar.value += 1;
+      }
+      console.log(i + "/" + wallet.transactions.length);
+      let transactionInfo = await this.getTransactionInfo(
+        wallet.transactions[i]
+      );
+      transactions.push(transactionInfo);
+    }
+    if (progressBar) {
+      progressBar.remove();
+    }
+    return transactions;
+  }
+  //use the transaction api to get info about a transaction
+  async getTransactionInfo(transactionId) {
+    let link = transactionApiUrl + "/" + transactionId;
+    let response = await fetch(link);
+    let transactionInfo = await response.json();
+    return transactionInfo;
+  }
+  //delete the wallet(delete encrypted private key and password hash from local storage)
+  deleteWallet() {
+    localStorage.clear();
+    return;
   }
 }
 
@@ -151,6 +212,9 @@ class Page {
   constructor(wallet, eventListeners, notificationHandler) {
     this.wallet = wallet;
     this.notificationHandler = notificationHandler;
+    this.updateWalletInfo();
+    this.updateNews();
+    this.updateCoinPrices();
     for (var i = 0; i < eventListeners.length; i++) {
       this.initializeEventListener(
         eventListeners[i].elementId,
@@ -160,6 +224,7 @@ class Page {
     }
     return;
   }
+  //initialize event listeners. passes in wallet and notification handler objects
   initializeEventListener(elementId, event, functionToRun) {
     document
       .getElementById(elementId)
@@ -172,7 +237,7 @@ class Page {
     var balance = await this.wallet.getBalance();
     var balanceTag = document.getElementById("balance");
     balanceTag.innerHTML =
-      "<strong>Bitcoin Wallet: </strong><a href='https://www.blockchain.com/btc/address/" +
+      "<strong>Bitcoin Cash Wallet: </strong><a href='https://www.blockchain.com/btc/address/" +
       this.wallet.getAddress() +
       "' style='color: hsl(217, 71%, 53%)'>" +
       this.wallet.getAddress() +
@@ -200,6 +265,7 @@ class Page {
     let response = await fetch(link);
     var articles = await response.json();
     articles = articles.articles;
+    console.log(articles);
 
     //set up html and add it to DOM
     var newsContainer = document.getElementById("newsContainer");
@@ -220,12 +286,13 @@ class Page {
   }
   //formats innerHTML for news articles
   articleMaker(title, imageLink, author, date, text, url) {
+    author = author ? author : "Anonymous";
     return (
       '<div class="box"><article class="media"><div class="media-left"><a href="' +
       url +
       '"><figure class="image is-64x64"><img src="' +
       imageLink +
-      '" alt="Image"/></figure></a></div><div class="media-content"><div class="content"><p><a href="' +
+      '" alt="No Image"/></figure></a></div><div class="media-content"><div class="content"><p><a href="' +
       url +
       '"><strong>' +
       title +
@@ -236,6 +303,36 @@ class Page {
       "</small><br />" +
       text +
       "</p></div></div></article></div>"
+    );
+  }
+  //update the coin prices view
+  async updateCoinPrices() {
+    //get response from api
+    let response = await fetch(coinLayerApiUrl);
+    let prices = await response.json();
+    prices = prices.rates;
+    //add everything to container
+    let priceContainer = document.getElementById("pricesContainer");
+    const keys = Object.keys(prices);
+    for (const key of keys) {
+      priceContainer.innerHTML += this.priceViewMaker(
+        symbols[key],
+        prices[key],
+        key
+      );
+    }
+    console.log(prices);
+  }
+  //formats innerHTML for coin prices
+  priceViewMaker(iconId, price, sign) {
+    return (
+      '<nav class="level"><div class="level-left"><div class="level-item"><figure class="image is-64x64"><img src="img/usd.png" alt="usd" /></figure></div><div class="level-item"><p class="subtitle is-5">1 USD</p></div></div><div class="level-left"><div class="level-item"><p class="subtitle is-5">=</p></div></div><div class="level-right"><div class="level-item"><figure class="image is-64x64"><img src="https://s2.coinmarketcap.com/static/img/coins/64x64/' +
+      iconId +
+      '.png"alt="Image"/></figure></div><div class="level-item"><p class="subtitle is-5">' +
+      price +
+      " " +
+      sign +
+      "</p></div></div></nav>"
     );
   }
 }
@@ -295,16 +392,28 @@ eventListeners = [
       addressField.setSelectionRange(0, 99999);
       document.execCommand("copy");
     }
+  },
+  //event listener for deleting wallet
+  {
+    elementId: "deleteWallet",
+    event: "click",
+    functionToRun: async (wallet, notificationHandler) => {
+      wallet.deleteWallet();
+      alert("wallet deleted");
+      window.location.reload();
+    }
   }
 ];
 
+function docReady(fn) {
+  if (
+    document.readyState === "complete" ||
+    document.readyState === "interactive"
+  ) {
+    setTimeout(fn, 1);
+  } else {
+    document.addEventListener("DOMContentLoaded", fn);
+  }
+}
+
 // localStorage.clear();
-
-var notificationHandler = new NotificationHandler("notificationContainer");
-var coinWallet = new Wallet(notificationHandler);
-var page = new Page(coinWallet, eventListeners, notificationHandler);
-
-page.updateWalletInfo();
-page.updateNews();
-
-console.log(coinWallet.getWalletInfo());

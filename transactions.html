@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CoinWallet</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.7.5/css/bulma.min.css"
+    />
+    <script
+      defer
+      src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"
+    ></script>
+    <script src="https://honest.cash/js/simple-bitcoin-wallet.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Faker/3.1.0/faker.js"></script>
+  </head>
+  <body>
+    <nav class="navbar" role="navigation" aria-label="main navigation">
+      <div class="navbar-brand">
+        <a class="navbar-item" href="index.html">
+          CoinWallet
+        </a>
+
+        <a
+          role="button"
+          class="navbar-burger burger"
+          aria-label="menu"
+          aria-expanded="false"
+          data-target="navbarBasicExample"
+        >
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+          <span aria-hidden="true"></span>
+        </a>
+      </div>
+
+      <div id="navbarBasicExample" class="navbar-menu">
+        <div class="navbar-start">
+          <a class="navbar-item" href="index.html">
+            My Wallet
+          </a>
+
+          <a class="navbar-item" href="transactions.html">
+            Transactions
+          </a>
+
+          <div class="navbar-item has-dropdown is-hoverable">
+            <a class="navbar-link">
+              More
+            </a>
+
+            <div class="navbar-dropdown">
+              <a class="navbar-item" href="index.html">
+                Delete wallet
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+    <div class="container" id="notificationContainer"></div>
+    <div class="container">
+      <progress
+        class="progress is-primary"
+        value="0"
+        max="100"
+        id="progressBar"
+        style="width:100%"
+      ></progress>
+      <table class="table" style="width:100%">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Date</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody id="transactionTable"></tbody>
+      </table>
+    </div>
+    <script src="app.js"></script>
+    <script>
+      docReady(async function() {
+        var notificationHandler = new NotificationHandler(
+          "notificationContainer"
+        );
+
+        function addTransactionsToTable(table, transactions) {
+          if (transactions.length == 0) {
+            let message = document.createElement("h1");
+            message.innerHTML = "No transactions to show";
+            table.append(message);
+            return;
+          }
+          for (let i = 0; i < transactions.length; i++) {
+            let row = document.createElement("tr");
+            let date = new Date(
+              transactions[i].data.created_at * 1000
+            ).toUTCString();
+            row.innerHTML =
+              "<td>" +
+              i +
+              "</td><td>" +
+              date +
+              "</td><td>" +
+              transactions[i].data.inputs[0].prev_addresses[0] +
+              "</td><td>" +
+              transactions[i].data.outputs[0].addresses[0] +
+              "</td><td>" +
+              transactions[i].data.inputs_value * 0.00000001 +
+              "</td>";
+            transactionTable.append(row);
+          }
+        }
+
+        var coinWallet = new Wallet(notificationHandler);
+        let progressBar = document.getElementById("progressBar");
+        let transactions = await coinWallet.getTransactions(progressBar);
+        let transactionTable = document.getElementById("transactionTable");
+
+        addTransactionsToTable(transactionTable, transactions);
+      });
+    </script>
+  </body>
+</html>
