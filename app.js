@@ -19,7 +19,8 @@ String.prototype.hashCode = function() {
 //The wallet class. Main object that stores the private/public keys and wallet methods.
 class Wallet {
   // construct the wallet object. if there is one in storage load it, if not then bring up wallet creation prompt
-  constructor() {
+  constructor(notificationHandler) {
+    this.notificationHandler = notificationHandler;
     var privateKey = this.getPrivateKey();
     if (privateKey) {
       //private key was found, there is already a wallet initialized
@@ -42,7 +43,11 @@ class Wallet {
       var privateKey = this.generatePrivateKey();
       this.savePrivateKey(this.encryptPrivateKey(privateKey, password));
       this.wallet = new SimpleWallet(privateKey);
-      alert("Please save your private key in a safe place: " + privateKey);
+      this.notificationHandler.message(
+        "Wallet created successfully. Please save your private key in a safe place: " +
+          privateKey,
+        "primary"
+      );
       return true;
     }
   }
@@ -120,21 +125,32 @@ class Wallet {
     } catch (e) {
       console.log(e);
       if (e == "Error: Insufficient balance") {
-        alert(
-          "transaction failed due to insufficient balance, please try again"
+        this.notificationHandler.message(
+          "Transaction failed due to insufficient balance, please try again.",
+          "danger"
         );
       } else {
-        alert("transaction failed, please try again");
+        this.notificationHandler.message(
+          "Transaction failed, please try again.",
+          "danger"
+        );
       }
 
       return false;
     }
   }
+  async getWalletInfo() {
+    const myWalletInfo = await this.wallet.getWalletInfo(
+      "bitcoincash:qp2rmj8heytjrksxm2xrjs0hncnvl08xwgkweawu9h"
+    );
+    console.log(myWalletInfo);
+  }
 }
 
 class Page {
-  constructor(wallet, eventListeners) {
+  constructor(wallet, eventListeners, notificationHandler) {
     this.wallet = wallet;
+    this.notificationHandler = notificationHandler;
     for (var i = 0; i < eventListeners.length; i++) {
       this.initializeEventListener(
         eventListeners[i].elementId,
@@ -147,7 +163,9 @@ class Page {
   initializeEventListener(elementId, event, functionToRun) {
     document
       .getElementById(elementId)
-      .addEventListener(event, () => functionToRun(this.wallet));
+      .addEventListener(event, () =>
+        functionToRun(this.wallet, this.notificationHandler)
+      );
   }
   async updateWalletInfo() {
     //update wallet balance
@@ -222,8 +240,28 @@ class Page {
   }
 }
 
-// localStorage.clear();
-var coinwallet = new Wallet();
+class NotificationHandler {
+  constructor(containerId) {
+    this.container = document.getElementById(containerId);
+    //initialize event listener for close buttons
+  }
+  showNotification(modal) {
+    this.container.append(modal);
+  }
+  message(text, type) {
+    var modal = document.createElement("div");
+    modal.className = "notification is-" + type;
+    var button = document.createElement("button");
+    button.className = "delete";
+    button.addEventListener("click", e => {
+      e.currentTarget.parentNode.remove();
+    });
+    modal.append(button);
+    modal.append(text);
+    this.showNotification(modal);
+  }
+}
+
 //event listeners must be defined here, they will be passed into the page object
 // elementId: id of the element to listen to
 // event: event to listen for
@@ -233,11 +271,14 @@ eventListeners = [
   {
     elementId: "transferButton",
     event: "click",
-    functionToRun: async wallet => {
+    functionToRun: async (wallet, notificationHandler) => {
       const recipientAddress = document.getElementById("recipientAddress");
       const amountToSend = document.getElementById("amountToSend").value;
       if (isNaN(amountToSend)) {
-        alert("Please enter a number in the amount to send field");
+        notificationHandler.message(
+          "Please enter a number in the amount to send field",
+          "danger"
+        );
         return;
       }
       wallet.sendBitcoin(recipientAddress, amountToSend);
@@ -248,7 +289,7 @@ eventListeners = [
   {
     elementId: "copyAddressButton",
     event: "click",
-    functionToRun: async wallet => {
+    functionToRun: async (wallet, notificationHandler) => {
       const addressField = document.getElementById("addressField");
       addressField.select();
       addressField.setSelectionRange(0, 99999);
@@ -256,7 +297,14 @@ eventListeners = [
     }
   }
 ];
-var page = new Page(coinwallet, eventListeners);
+
+// localStorage.clear();
+
+var notificationHandler = new NotificationHandler("notificationContainer");
+var coinWallet = new Wallet(notificationHandler);
+var page = new Page(coinWallet, eventListeners, notificationHandler);
 
 page.updateWalletInfo();
 page.updateNews();
+
+console.log(coinWallet.getWalletInfo());
